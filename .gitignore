@@ -1,0 +1,28 @@
+# Gradle build system caches and output
+.gradle/
+build/
+
+# Android Studio / IntelliJ project files (machine- and user-specific)
+.idea/
+*.iml
+
+# Kotlin compiler session cache
+.kotlin/
+
+# Local machine config — contains the absolute path to YOUR Android SDK.
+# Each developer generates their own; it must never be committed.
+local.properties
+
+# Logs and JVM crash dumps (e.g. hs_err_pidNNNN.log, replay_pidNNNN.log)
+*.log
+hs_err_pid*
+replay_pid*
+
+# Native build artifacts
+.externalNativeBuild
+.cxx
+/captures
+
+# Operating-system clutter
+.DS_Store
+Thumbs.db
