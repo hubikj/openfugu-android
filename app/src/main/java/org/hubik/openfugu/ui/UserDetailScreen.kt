@@ -253,11 +253,11 @@ private fun PressureRangeCard(
                     valueRange = 5f..100f,
                     steps = 18
                 )
-                val positiveCap = profile.maxPositiveHPa?.times(0.8)
+                val positiveCap = profile.maxPositiveHPa
                 if (positiveCap != null && manualRange > positiveCap) {
                     Text(
-                        "Capped at ${"%.0f".format(positiveCap)} hPa — 80% of the calibrated " +
-                            "maximum. Games never require pressure above that.",
+                        "Capped at ${"%.0f".format(positiveCap)} hPa — your calibrated " +
+                            "comfortable maximum. Games never require pressure above it.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.tertiary
                     )
@@ -277,11 +277,11 @@ private fun PressureRangeCard(
                         valueRange = 5f..50f,
                         steps = 8
                     )
-                    val negativeCap = profile.maxNegativeHPa?.times(0.8)
+                    val negativeCap = profile.maxNegativeHPa
                     if (negativeCap != null && manualNeg > negativeCap) {
                         Text(
-                            "Capped at ${"%.0f".format(negativeCap)} hPa — 80% of the calibrated " +
-                                "maximum. Games never require pressure above that.",
+                            "Capped at ${"%.0f".format(negativeCap)} hPa — your calibrated " +
+                                "comfortable maximum. Games never require pressure above it.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.tertiary
                         )

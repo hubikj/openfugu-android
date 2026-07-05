@@ -49,8 +49,9 @@ Pressure training should never reward pushing harder. OpenFugu enforces this in 
 
 - In every game, pressure maps **only to vertical position** — never to speed, power, or
   score. The most precise player wins, not the one pushing hardest.
-- Game ranges are **capped at ~80% of your calibrated maximum**, so full deflection
-  happens well below your comfortable limit.
+- Game ranges are **capped by your calibration**: the automatic range targets ~80% of
+  your calibrated comfortable maximum, and even a manual range can never exceed the
+  calibrated value itself.
 - The Minimum Equalization Pressure exercise rewards the **smallest, most consistent** pressure.
 - Calibration measures a *comfortable* hold and explicitly warns against pushing to your
   absolute maximum.

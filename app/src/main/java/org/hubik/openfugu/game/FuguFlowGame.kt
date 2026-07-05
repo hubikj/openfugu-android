@@ -1,6 +1,7 @@
 package org.hubik.openfugu.game
 
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -504,14 +505,22 @@ fun FuguFlowScreen(
 
                         patternEntries.forEachIndexed { index, (name, description) ->
                             val pattern = fixedPatterns.getOrNull(index)
+                            val isSelected = index == selectedPatternIndex
+                            val previewColor = MaterialTheme.colorScheme.primary
+                            // Selection = primary border + subtle tint. A filled
+                            // primaryContainer washed out the text and preview
+                            // curve with some dynamic color schemes.
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
                                     .clickable { selectedPatternIndex = index },
-                                colors = if (index == selectedPatternIndex)
-                                    CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                else CardDefaults.cardColors()
+                                colors = if (isSelected)
+                                    CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                else CardDefaults.cardColors(),
+                                border = if (isSelected)
+                                    BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                                else null
                             ) {
                                 Row(
                                     modifier = Modifier.padding(16.dp),
@@ -519,9 +528,9 @@ fun FuguFlowScreen(
                                 ) {
                                     Canvas(modifier = Modifier.size(48.dp)) {
                                         if (pattern != null) {
-                                            drawPatternPreview(pattern)
+                                            drawPatternPreview(pattern, previewColor)
                                         } else {
-                                            drawRandomPreview()
+                                            drawRandomPreview(previewColor)
                                         }
                                     }
                                     Spacer(modifier = Modifier.width(16.dp))
@@ -895,7 +904,7 @@ private fun DrawScope.drawFlowGame(
     drawPressureText(pressureText, h, dpToPx)
 }
 
-private fun DrawScope.drawPatternPreview(pattern: FlowPattern) {
+private fun DrawScope.drawPatternPreview(pattern: FlowPattern, color: Color) {
     val w = size.width
     val h = size.height
     val path = Path()
@@ -907,10 +916,10 @@ private fun DrawScope.drawPatternPreview(pattern: FlowPattern) {
         val y = h * (1f - frac)
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
-    drawPath(path, TargetCurveColor, style = Stroke(width = 2f))
+    drawPath(path, color, style = Stroke(width = 2f))
 }
 
-private fun DrawScope.drawRandomPreview() {
+private fun DrawScope.drawRandomPreview(color: Color) {
     val w = size.width
     val h = size.height
     val path = Path().apply {
@@ -921,8 +930,8 @@ private fun DrawScope.drawRandomPreview() {
         lineTo(w * 0.7f, h * 0.5f)
         lineTo(w * 0.9f, h * 0.4f)
     }
-    drawPath(path, TargetCurveColor, style = Stroke(width = 2f))
-    drawCircle(TargetCurveColor.copy(alpha = 0.4f), 3f, Offset(w * 0.3f, h * 0.8f))
-    drawCircle(TargetCurveColor.copy(alpha = 0.4f), 3f, Offset(w * 0.6f, h * 0.85f))
-    drawCircle(TargetCurveColor.copy(alpha = 0.4f), 3f, Offset(w * 0.8f, h * 0.75f))
+    drawPath(path, color, style = Stroke(width = 2f))
+    drawCircle(color.copy(alpha = 0.4f), 3f, Offset(w * 0.3f, h * 0.8f))
+    drawCircle(color.copy(alpha = 0.4f), 3f, Offset(w * 0.6f, h * 0.85f))
+    drawCircle(color.copy(alpha = 0.4f), 3f, Offset(w * 0.8f, h * 0.75f))
 }
