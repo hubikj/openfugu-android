@@ -1,90 +1,18 @@
 # OpenFugu — Ideas
 
-A loose collection of ideas, not a committed roadmap: some are done, some are planned, some are just maybes.
-
-## Completed
-- [x] BLE protocol discovery (pressure service, auth, device info)
-- [x] Multi-device BLE support (up to ~7 concurrent connections)
-- [x] Bottom navigation UI (Live, Exercises, Devices, Users)
-- [x] Saved devices with nicknames and color assignment
-- [x] MRU auto-connect, auto-scan on app open
-- [x] Live pressure chart (fixed 10s window, per-device colors, pause/scroll/zoom)
-- [x] Fugu Reef game (obstacle course, progressive difficulty)
-- [x] Fugu Feast game (eat smaller fish, avoid bigger, rocks, growth)
-- [x] Fugu Cave game (cave swim-through, narrowing passages, jagged walls)
-- [x] Fugu fish app icon
-- [x] Unexpected disconnect handling
-- [x] Unified device cards across Live and Devices tabs
-- [x] Game code refactored — shared GameUtils.kt (GameState, pressure mapping, frame loop, colors, drawing helpers) + MultiplayerGameUtils.kt (shared multiplayer plumbing); per-game tuning constants defined once in the single-player file
-- [x] Expert pressure mode (bidirectional, asymmetric scaling, per-user toggle)
-- [x] Calibration wizard (min equalization, max positive, max negative, per-user)
-- [x] User profiles with calibration data, device-user pairing
-- [x] Minimum equalization exercise (standalone, with save-to-profile)
-- [x] Constant equalization exercise (activation, grace period, difficulty levels, scoring)
-- [x] Unified PressureChart with optional overlays (peak markers, target range, scoring colors)
-- [x] Dark/light theme (Material 3 dynamic theming)
-- [x] Portrait orientation lock
-- [x] Session import — shared `.fugu` session files open in OpenFugu (validated, saved to history, shown in the viewer)
-- [x] First-run guided setup (start on Devices tab with welcome card → first user dialog after connect → calibration offer after any user creation)
-- [x] Device-user assignment management (remove assigned user from device, assign/remove devices on user detail)
-- [x] App version shown in the Logs screen and logged on startup
-- [x] Session files rounded to 3 decimals (compact, no floating-point noise)
-- [x] Unified game launch — no separate multiplayer section; one card per game, devices picked per launch when several are connected (checkboxes where multiplayer is supported, one selection runs single-player; radio buttons for single-player-only entries; last-used devices pre-checked). New games declare a player range on their `ExerciseEntry` in ExercisesTab.kt
-
----
+A loose collection of ideas, not a committed roadmap: some are planned, some are just maybes. Finished work is not tracked here — it lives in git history and the GitHub release notes.
 
 ## Up Next (single-device, no extra hardware needed)
 
-### Session Save/Load/Share
-**Goal:** Let users save pressure recording sessions and share them (e.g., with an instructor for review).
+### Session Sharing Enhancements
+**Goal:** More ways to capture and share sessions, beyond the auto-save and `.fugu` file sharing that already ship.
 
-**Implemented (v1):**
-- [x] Auto-save on exercise completion and game over
-- [x] Per-session JSON files in app internal storage with index for fast listing
-- [x] History section in Exercises tab (last 20 sessions)
-- [x] Session viewer with PressureChart replay (full zoom/scroll) + stats card
-- [x] Share via Android share sheet (`.fugu` file — JSON inside — via FileProvider)
-- [x] Min equalization: full replay with peak markers (green/red diamonds)
-- [x] Constant equalization: full replay with target range overlay + scoring colors
-- [x] Games: pressure trace + score
-- [x] Delete sessions
-- [x] Re-import: shared sessions are `.fugu` files; tapping one opens it in OpenFugu (imported into history, viewable, deletable). Custom extension keeps OpenFugu out of the "open with" list for ordinary JSON files.
-
-**Future enhancements:**
 - [ ] QR code sharing — student's phone shows QR, instructor scans to receive session data (works offline, no accounts)
 - [ ] Shareable link — upload session to a simple cloud endpoint, get a short URL that opens the session in-app or browser (the expected long-term sharing path once internet features land)
 - [ ] Save from Live tab (manual "save session" button for free recording)
 - [ ] FIT file export — save sessions as Garmin FIT files (breathwork activity type) so users can log equalization training in Garmin Connect alongside their dive/fitness data. The FIT SDK is open source and supports custom developer fields for pressure data.
 
 **Why this matters:** Instructors currently have no way to review a student's session after it ends. This enables asynchronous coaching — student trains, saves session, sends to instructor.
-
----
-
-### Rhythm Game — Fugu Flow [x]
-**Goal:** "Guitar Hero for your ears" — follow a scrolling pressure curve by matching your equalization pressure to a target pattern. Trains timing and pressure accuracy.
-
-**UX concept:**
-- A target pressure curve scrolls from right to left across the screen
-- The player's actual pressure is shown as a line/dot that they try to keep on the target curve
-- Scoring based on how closely the actual pressure matches the target at each moment
-- Patterns could be: ramps, holds, pulses, sine waves, step functions
-- Difficulty levels control curve complexity and required precision
-
-**Pattern design:**
-- Patterns defined as a sequence of `(time, targetHPa)` keyframes, interpolated linearly or with smoothing
-- Built-in pattern library: "Gentle Ramp", "Pulse Train", "Staircase", "Wave"
-- Advanced: patterns derived from the user's own calibration data (zero or something like 50% of min EQ as baseline, 80% max as ceiling)
-
-**Scoring:**
-- Continuous score: distance between actual and target, integrated over time
-- "Perfect" / "Good" / "OK" / "Miss" zones around the target curve
-- Combo multiplier for sustained accuracy
-- Final score + breakdown at end
-
-**Technical notes:**
-- Reuse PressureChart rendering approach (Canvas with time-based scrolling)
-- Pattern data structure: `data class RhythmPattern(val name: String, val keyframes: List<Pair<Float, Double>>)` where Float = seconds, Double = target hPa
-- Single player, single device. Uses `pressureRange` from user profile to scale target values.
 
 ---
 
@@ -141,65 +69,6 @@ A loose collection of ideas, not a committed roadmap: some are done, some are pl
 ---
 
 ## Needs Multiple Devices
-
-### Multiplayer Fugu Reef [x]
-**Goal:** Multiple players on the same screen, each controlling their own colored fugu fish through the same obstacle course.
-
-**UX concept:**
-- Same obstacle course as single-player Fugu Reef, but with 2-7 colored fugus
-- Each fugu controlled by a different connected device
-- No inter-fish collision — fugus can overlap
-- Each fish uses its device's assigned color
-- Shared scoreboard at game over
-
-**Technical approach:**
-- Extend FuguReefGame to accept `List<DeviceConnection>` instead of single connection
-- Each connection maps to a fish position via `calculateTargetY()`
-- Draw multiple fugus with `drawFugu()` using device colors
-- Collision detection per-fish against shared obstacles
-- When a fish hits an obstacle, that player is out — last fish standing wins (but we can keep it alive until it is out too to get the highest distance)
-
-**Device selection:**
-- Use DevicePickerDialog in multi-select mode
-- A paired user is recommended (unpaired devices fall back to default ranges); devices without an assigned color fall back to preset colors
-
----
-
-### Multiplayer Fugu Cave [x]
-**Goal:** Same principle as Multiplayer Fugu Reef, on the shared cave course.
-
-**How it was resolved (implemented in `MultiplayerFuguCaveGame.kt`):**
-- The cave terrain, scrolling, and gap sampling are shared with the single-player game
-  (extracted to file-level functions in `FuguCaveGame.kt`)
-- Distance is the score and is shared while alive; a wall hit or disconnect eliminates
-  that player and freezes their score at the distance where they died
-- Speed and gap narrowing ramp with the shared distance; eliminated fugus fade but stay
-  visible; game ends when all are out, ranked by distance
-
----
-
-### Multiplayer Fugu Feast [x]
-**Goal:** Competitive eating — multiple players compete for food fish on the same screen.
-
-**How it was resolved (implemented in `MultiplayerFuguFeastGame.kt`):**
-- All fugus share the same horizontal position (25% of width, like single-player) — no lanes,
-  no offset, so no front-fish advantage. Collision stays circle-based.
-- Contested food: when several players overlap the same prey in one frame, the **closest mouth**
-  eats it — precision decides ties, not iteration order.
-- Shared-screen coloring: enemy type (prey/predator) is **fixed at spawn** relative to the
-  players alive at that moment — prey up to the smallest alive player's size (safe with no
-  margin, since players only grow), predators bigger than the biggest (≥ 1.15×, margin because
-  players grow toward them). Collisions resolve by that type, not by live size comparison, so
-  green always means edible and red always means lethal for everyone, even after players grow
-  past an on-screen fish.
-- Size balance: a bigger fugu has longer eating reach, but its death hitbox against predators
-  and rocks grows just as fast, and predators are sized off the leader — growth is an
-  advantage with teeth, not a runaway win.
-
-**Scoring:** most fish eaten wins. Touching a predator or rock eliminates that player; the game
-runs until everyone is out, then shows the ranked scoreboard.
-
----
 
 ### Instructor Multi-Device Monitoring
 **Goal:** Dedicated view for a freediving instructor watching multiple students train simultaneously.
@@ -399,8 +268,8 @@ runs until everyone is out, then shows the ranked scoreboard.
 ---
 
 ### Device Color in Multi-Device
-- Use assigned colors in all multiplayer game UIs and instructor views
-- Color-coded charts in multi-device Live tab (already done for line colors)
+Multiplayer games and the Live chart already use assigned device colors. Remaining:
+- Use assigned colors in future instructor views
 - Physical identification: 3D-printed colored nose pieces or colored tape to match app colors to physical devices
 
 ---
@@ -419,7 +288,7 @@ runs until everyone is out, then shows the ranked scoreboard.
 **Data model:**
 ```
 /rooms/{roomId}/
-  /players/{odevi ceId}/
+  /players/{deviceId}/
     name: "Alice"
     color: "#43A047"
     pressure: 12.5       (updated at ~10 Hz, throttled from 20 Hz)
