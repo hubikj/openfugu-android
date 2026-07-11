@@ -1193,7 +1193,8 @@ fun DevicesTab(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
-            connectingDevices.forEach { device ->
+            connectingDevices.forEachIndexed { index, device ->
+                if (index > 0) Spacer(modifier = Modifier.height(8.dp))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.padding(16.dp),
