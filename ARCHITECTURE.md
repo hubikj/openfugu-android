@@ -92,7 +92,7 @@ session traces come from historySnapshot() at save time
 ```
 
 The algorithmic core (detectors, RangeTracker, range derivation, game
-mapping, session JSON) is unit-tested in `app/src/test/`, and its behavior
+mapping, session JSON) is unit-tested in `shared/src/androidHostTest/`, and its behavior
 is specified platform-neutrally in [SPEC.md](SPEC.md).
 
 ### State Management
@@ -167,7 +167,7 @@ shared as `.fugu` files (JSON inside), which receiving apps resolve to that
 MIME type. Incoming intents (onCreate or onNewIntent) flow into `EFuguApp`
 as Compose state; `EFuguViewModel.importSession` validates and saves the
 session into history, then the standard session viewer opens it. Foreign
-files are rejected with a toast.
+files are rejected with a snackbar message.
 
 ## Key Design Decisions
 
