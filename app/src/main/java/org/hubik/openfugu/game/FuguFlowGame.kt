@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import org.hubik.openfugu.ble.PressureSource
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sin

@@ -16,7 +16,7 @@ import org.hubik.openfugu.PressureChart
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.ble.PeakDetector
 import org.hubik.openfugu.ble.UserProfile
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 import androidx.compose.foundation.clickable
 import org.hubik.openfugu.ui.AppColors
 import org.hubik.openfugu.ui.BaselineDriftDialog

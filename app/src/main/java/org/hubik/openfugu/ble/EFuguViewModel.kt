@@ -17,11 +17,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import org.hubik.openfugu.util.boolean
+import org.hubik.openfugu.util.doubleOrNull
+import org.hubik.openfugu.util.long
+import org.hubik.openfugu.util.string
+import org.hubik.openfugu.util.stringOrNull
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.abs
 
 data class ScannedDevice(
     val name: String?,
@@ -166,18 +174,18 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
         val json = prefs.getString(PREF_SAVED_DEVICES, null)
         if (json != null) {
             try {
-                val arr = JSONArray(json)
+                val arr = Json.parseToJsonElement(json).jsonArray
                 val devices = mutableListOf<SavedDevice>()
-                for (i in 0 until arr.length()) {
+                for (el in arr) {
                     // Parse per entry: one unreadable device must not discard the rest.
                     try {
-                        val obj = arr.getJSONObject(i)
+                        val obj = el.jsonObject
                         devices.add(SavedDevice(
-                            address = obj.getString("address"),
-                            name = obj.getString("name"),
-                            nickname = obj.optString("nickname").takeIf { it.isNotEmpty() && it != "null" },
-                            lastConnectedAt = obj.getLong("lastConnectedAt"),
-                            colorArgb = obj.optLong("colorArgb", 0L).takeIf { it != 0L }
+                            address = obj.string("address"),
+                            name = obj.string("name"),
+                            nickname = obj.stringOrNull("nickname")?.takeIf { it.isNotEmpty() && it != "null" },
+                            lastConnectedAt = obj.long("lastConnectedAt"),
+                            colorArgb = obj.long("colorArgb", 0L).takeIf { it != 0L }
                         ))
                     } catch (e: Exception) {
                         Log.w(TAG, "Skipping unreadable saved device entry", e)
@@ -205,15 +213,16 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun persistSavedDevices() {
-        val arr = JSONArray()
-        _savedDevices.value.forEach { dev ->
-            arr.put(JSONObject().apply {
-                put("address", dev.address)
-                put("name", dev.name)
-                put("nickname", dev.nickname ?: "")
-                put("lastConnectedAt", dev.lastConnectedAt)
-                put("colorArgb", dev.colorArgb ?: 0L)
-            })
+        val arr = buildJsonArray {
+            _savedDevices.value.forEach { dev ->
+                addJsonObject {
+                    put("address", dev.address)
+                    put("name", dev.name)
+                    put("nickname", dev.nickname ?: "")
+                    put("lastConnectedAt", dev.lastConnectedAt)
+                    put("colorArgb", dev.colorArgb ?: 0L)
+                }
+            }
         }
         prefs.edit().putString(PREF_SAVED_DEVICES, arr.toString()).apply()
     }
@@ -264,23 +273,23 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadUserProfiles() {
         val json = prefs.getString(PREF_USER_PROFILES, null) ?: return
         try {
-            val arr = JSONArray(json)
+            val arr = Json.parseToJsonElement(json).jsonArray
             val profiles = mutableListOf<UserProfile>()
-            for (i in 0 until arr.length()) {
+            for (el in arr) {
                 // Parse per entry: one unreadable profile must not discard the rest.
                 try {
-                    val obj = arr.getJSONObject(i)
+                    val obj = el.jsonObject
                     profiles.add(UserProfile(
-                        id = obj.getString("id"),
-                        name = obj.getString("name"),
-                        minEqPressureHPa = obj.optDouble("minEqPressureHPa").takeIf { !it.isNaN() },
-                        maxPositiveHPa = obj.optDouble("maxPositiveHPa").takeIf { !it.isNaN() },
-                        maxNegativeHPa = obj.optDouble("maxNegativeHPa").takeIf { !it.isNaN() },
-                        gamePressureRangeManual = obj.optDouble("gamePressureRangeManual").takeIf { !it.isNaN() },
-                        gameNegativeRangeManual = obj.optDouble("gameNegativeRangeManual").takeIf { !it.isNaN() },
-                        useAutoRange = obj.optBoolean("useAutoRange", true),
-                        expertMode = obj.optBoolean("expertMode", false),
-                        lastCalibratedAt = obj.optLong("lastCalibratedAt", 0L).takeIf { it != 0L }
+                        id = obj.string("id"),
+                        name = obj.string("name"),
+                        minEqPressureHPa = obj.doubleOrNull("minEqPressureHPa"),
+                        maxPositiveHPa = obj.doubleOrNull("maxPositiveHPa"),
+                        maxNegativeHPa = obj.doubleOrNull("maxNegativeHPa"),
+                        gamePressureRangeManual = obj.doubleOrNull("gamePressureRangeManual"),
+                        gameNegativeRangeManual = obj.doubleOrNull("gameNegativeRangeManual"),
+                        useAutoRange = obj.boolean("useAutoRange", true),
+                        expertMode = obj.boolean("expertMode", false),
+                        lastCalibratedAt = obj.long("lastCalibratedAt", 0L).takeIf { it != 0L }
                     ))
                 } catch (e: Exception) {
                     Log.w(TAG, "Skipping unreadable user profile entry", e)
@@ -296,20 +305,21 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun persistUserProfiles() {
-        val arr = JSONArray()
-        _userProfiles.value.forEach { p ->
-            arr.put(JSONObject().apply {
-                put("id", p.id)
-                put("name", p.name)
-                p.minEqPressureHPa?.let { put("minEqPressureHPa", it) }
-                p.maxPositiveHPa?.let { put("maxPositiveHPa", it) }
-                p.maxNegativeHPa?.let { put("maxNegativeHPa", it) }
-                p.gamePressureRangeManual?.let { put("gamePressureRangeManual", it) }
-                p.gameNegativeRangeManual?.let { put("gameNegativeRangeManual", it) }
-                put("useAutoRange", p.useAutoRange)
-                put("expertMode", p.expertMode)
-                p.lastCalibratedAt?.let { put("lastCalibratedAt", it) }
-            })
+        val arr = buildJsonArray {
+            _userProfiles.value.forEach { p ->
+                addJsonObject {
+                    put("id", p.id)
+                    put("name", p.name)
+                    p.minEqPressureHPa?.let { put("minEqPressureHPa", it) }
+                    p.maxPositiveHPa?.let { put("maxPositiveHPa", it) }
+                    p.maxNegativeHPa?.let { put("maxNegativeHPa", it) }
+                    p.gamePressureRangeManual?.let { put("gamePressureRangeManual", it) }
+                    p.gameNegativeRangeManual?.let { put("gameNegativeRangeManual", it) }
+                    put("useAutoRange", p.useAutoRange)
+                    put("expertMode", p.expertMode)
+                    p.lastCalibratedAt?.let { put("lastCalibratedAt", it) }
+                }
+            }
         }
         prefs.edit()
             .putString(PREF_USER_PROFILES, arr.toString())
@@ -342,14 +352,14 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadDeviceUserPairings() {
         val json = prefs.getString(PREF_DEVICE_USER_PAIRINGS, null) ?: return
         try {
-            val arr = JSONArray(json)
+            val arr = Json.parseToJsonElement(json).jsonArray
             val pairings = mutableListOf<DeviceUserPairing>()
-            for (i in 0 until arr.length()) {
+            for (el in arr) {
                 try {
-                    val obj = arr.getJSONObject(i)
+                    val obj = el.jsonObject
                     pairings.add(DeviceUserPairing(
-                        deviceAddress = obj.getString("deviceAddress"),
-                        userId = obj.getString("userId")
+                        deviceAddress = obj.string("deviceAddress"),
+                        userId = obj.string("userId")
                     ))
                 } catch (e: Exception) {
                     Log.w(TAG, "Skipping unreadable pairing entry", e)
@@ -363,12 +373,13 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun persistDeviceUserPairings() {
-        val arr = JSONArray()
-        _deviceUserPairings.value.forEach { p ->
-            arr.put(JSONObject().apply {
-                put("deviceAddress", p.deviceAddress)
-                put("userId", p.userId)
-            })
+        val arr = buildJsonArray {
+            _deviceUserPairings.value.forEach { p ->
+                addJsonObject {
+                    put("deviceAddress", p.deviceAddress)
+                    put("userId", p.userId)
+                }
+            }
         }
         prefs.edit().putString(PREF_DEVICE_USER_PAIRINGS, arr.toString()).apply()
     }
@@ -662,7 +673,9 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
                     Log.w(TAG, "Rejecting session import: file exceeds $MAX_IMPORT_BYTES bytes")
                     return@withContext null
                 }
-                org.hubik.openfugu.session.SessionJson.sessionFromJson(JSONObject(bytes.decodeToString()))
+                org.hubik.openfugu.session.SessionJson.sessionFromJson(
+                    Json.parseToJsonElement(bytes.decodeToString()).jsonObject
+                )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to import session from $uri", e)
                 null
@@ -679,10 +692,4 @@ class EFuguViewModel(application: Application) : AndroidViewModel(application) {
         stopScan()
         disconnectAll()
     }
-}
-
-/** Format hPa avoiding "-0.0" display */
-fun formatHPa(value: Double): String {
-    val display = if (abs(value) < 0.05) 0.0 else value
-    return "%.1f".format(display)
 }

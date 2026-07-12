@@ -6,8 +6,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import java.io.File
 import java.io.IOException
 
@@ -58,7 +61,7 @@ class SessionRepository(private val context: Context) {
         val file = File(sessionsDir, "session_$id.json")
         if (!file.exists()) return@withContext null
         try {
-            SessionJson.sessionFromJson(JSONObject(file.readText()))
+            SessionJson.sessionFromJson(Json.parseToJsonElement(file.readText()).jsonObject)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load session $id", e)
             null
@@ -85,8 +88,8 @@ class SessionRepository(private val context: Context) {
         val entries = if (!file.exists()) {
             rebuildIndexLocked()
         } else try {
-            val arr = JSONArray(file.readText())
-            (0 until arr.length()).map { SessionJson.indexEntryFromJson(arr.getJSONObject(it)) }
+            Json.parseToJsonElement(file.readText()).jsonArray
+                .map { SessionJson.indexEntryFromJson(it.jsonObject) }
                 .sortedByDescending { it.timestamp }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load index, rebuilding", e)
@@ -122,8 +125,7 @@ class SessionRepository(private val context: Context) {
     }
 
     private fun writeIndexLocked(entries: List<SessionIndexEntry>) {
-        val arr = JSONArray()
-        entries.forEach { arr.put(SessionJson.indexEntryToJson(it)) }
+        val arr = buildJsonArray { entries.forEach { add(SessionJson.indexEntryToJson(it)) } }
         File(sessionsDir, INDEX_FILE).writeAtomically(arr.toString())
         cachedIndex = entries
     }
@@ -133,7 +135,7 @@ class SessionRepository(private val context: Context) {
             ?.filter { it.name.startsWith("session_") && it.name.endsWith(".json") }
             ?.mapNotNull { file ->
                 try {
-                    val session = SessionJson.sessionFromJson(JSONObject(file.readText()))
+                    val session = SessionJson.sessionFromJson(Json.parseToJsonElement(file.readText()).jsonObject)
                     session?.let { SessionJson.indexEntryFromSession(it) }
                 } catch (e: Exception) { null }
             }

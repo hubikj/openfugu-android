@@ -26,7 +26,7 @@ import org.hubik.openfugu.ble.SavedDevice
 import org.hubik.openfugu.ble.SustainedPressureDetector
 import org.hubik.openfugu.ble.PressureDirection
 import org.hubik.openfugu.ble.UserProfile
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 import org.hubik.openfugu.DevicePickerDialog
 import org.hubik.openfugu.ChartLine
 import org.hubik.openfugu.PressureChart

@@ -1,8 +1,12 @@
 package org.hubik.openfugu.session
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.hubik.openfugu.ble.PressureReading
 import org.hubik.openfugu.exercise.PeakMarker
-import org.json.JSONObject
+import org.hubik.openfugu.util.array
+import org.hubik.openfugu.util.double
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -20,8 +24,10 @@ class SessionJsonTest {
         PressureReading(pressureHPa = 998.0, relativeHPa = 4.9, timestamp = 1100L)
     )
 
+    private fun parse(text: String): JsonObject = Json.parseToJsonElement(text).jsonObject
+
     private fun roundTrip(session: Session): Session? =
-        SessionJson.sessionFromJson(JSONObject(SessionJson.sessionToJson(session).toString()))
+        SessionJson.sessionFromJson(parse(SessionJson.sessionToJson(session).toString()))
 
     @Test
     fun `min eq session round-trips`() {
@@ -116,12 +122,12 @@ class SessionJsonTest {
             mean = 1.0 / 3.0, stddev = 2.0 / 3.0, successCount = 1, failCount = 0
         )
         val json = SessionJson.sessionToJson(session)
-        val reading = json.getJSONArray("pressureTrace").getJSONObject(0)
-        assertEquals(12.34, reading.getDouble("r"), 0.0)
-        assertEquals(1013.25, reading.getDouble("p"), 0.0)
-        assertEquals(0.333, json.getDouble("mean"), 0.0)
-        assertEquals(0.667, json.getDouble("stddev"), 0.0)
-        assertEquals(0.333, json.getJSONArray("peakMarkers").getJSONObject(0).getDouble("v"), 0.0)
+        val reading = json.array("pressureTrace")[0].jsonObject
+        assertEquals(12.34, reading.double("r"), 0.0)
+        assertEquals(1013.25, reading.double("p"), 0.0)
+        assertEquals(0.333, json.double("mean"), 0.0)
+        assertEquals(0.667, json.double("stddev"), 0.0)
+        assertEquals(0.333, json.array("peakMarkers")[0].jsonObject.double("v"), 0.0)
         // The serialized text itself must not carry float noise
         assert("12.340000000000003" !in json.toString())
     }
@@ -137,12 +143,12 @@ class SessionJsonTest {
         )
         val json = SessionJson.sessionToJson(session)
         // 0.87f.toDouble() is 0.8700000047683716; the file must say 0.87
-        assertEquals(0.87, json.getDouble("percentInRange"), 0.0)
+        assertEquals(0.87, json.double("percentInRange"), 0.0)
     }
 
     @Test
     fun `unknown session type from a future version loads as null, not a crash`() {
-        val json = JSONObject(
+        val json = parse(
             """{"id":"x","type":"HOLODECK_GAME","timestamp":1,"durationMs":1,
                "deviceName":"d","userName":null,"pressureTrace":[]}"""
         )
@@ -157,14 +163,33 @@ class SessionJsonTest {
             durationMs = 1000L, deviceName = "d", userName = null,
             pressureTrace = emptyList(), score = 5
         )
-        val json = SessionJson.sessionToJson(session)
-        json.remove("pressureRange")
-        json.remove("negativeRange")
-        json.remove("expertMode")
-        val loaded = SessionJson.sessionFromJson(json) as Session.GameSession
+        val stripped = JsonObject(SessionJson.sessionToJson(session)
+            .filterKeys { it !in setOf("pressureRange", "negativeRange", "expertMode") })
+        val loaded = SessionJson.sessionFromJson(stripped) as Session.GameSession
         assertEquals(40.0, loaded.pressureRange, 1e-9)
         assertEquals(0.0, loaded.negativeRange, 1e-9)
         assertEquals(false, loaded.expertMode)
+    }
+
+    @Test
+    fun `session file written by a pre-kotlinx app version still loads`() {
+        // Literal file content from the org.json era (integral doubles written
+        // without ".0", explicit null userName) — guards the storage migration.
+        val legacy = parse(
+            """{"id":"legacy-1","type":"CONSTANT_EQ","timestamp":1751884800000,
+                "durationMs":60000,"deviceName":"eFugu","userName":null,
+                "pressureTrace":[{"p":1013,"r":0,"t":1751884800000},
+                                 {"p":1013.25,"r":12.34,"t":1751884800050}],
+                "lowerBound":9,"upperBound":16.5,"activationThreshold":15,
+                "scoringStartMs":4000,"percentInRange":0.87,"bestStreakMs":30000,
+                "difficultyLabel":"Medium","durationSetting":"1 minute"}"""
+        )
+        val loaded = SessionJson.sessionFromJson(legacy) as Session.ConstantEqSession
+        assertEquals("legacy-1", loaded.id)
+        assertEquals(1013.0, loaded.pressureTrace[0].pressureHPa, 0.0)
+        assertEquals(9.0, loaded.lowerBound, 0.0)
+        assertEquals(0.87f, loaded.percentInRange)
+        assertNull(loaded.userName)
     }
 
     @Test
@@ -175,7 +200,7 @@ class SessionJsonTest {
             summaryText = "87% in range"
         )
         val loaded = SessionJson.indexEntryFromJson(
-            JSONObject(SessionJson.indexEntryToJson(entry).toString())
+            parse(SessionJson.indexEntryToJson(entry).toString())
         )
         assertEquals(entry, loaded)
     }
@@ -188,7 +213,7 @@ class SessionJsonTest {
             summaryText = "Score: 3"
         )
         val loaded = SessionJson.indexEntryFromJson(
-            JSONObject(SessionJson.indexEntryToJson(entry).toString())
+            parse(SessionJson.indexEntryToJson(entry).toString())
         )
         assertEquals(entry, loaded)
     }

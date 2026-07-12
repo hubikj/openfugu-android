@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.hubik.openfugu.ble.EFuguViewModel
 import org.hubik.openfugu.ble.MockDeviceConnection
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 
 // Handle geometry, shared by the handle itself and the gap in the panel's
 // border where the handle attaches (the handle is vertically centered).

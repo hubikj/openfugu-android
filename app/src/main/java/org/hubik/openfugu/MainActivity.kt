@@ -83,7 +83,7 @@ import org.hubik.openfugu.ble.PressureReading
 import org.hubik.openfugu.ble.SavedDevice
 import org.hubik.openfugu.ble.ScanState
 import org.hubik.openfugu.ble.ScannedDevice
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 import org.hubik.openfugu.session.SessionViewerScreen
 import org.hubik.openfugu.ui.AppColors
 import org.hubik.openfugu.ui.UserDetailScreen

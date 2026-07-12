@@ -15,7 +15,7 @@ import org.hubik.openfugu.ChartLine
 import org.hubik.openfugu.PressureChart
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.ble.PressureReading
-import org.hubik.openfugu.ble.formatHPa
+import org.hubik.openfugu.util.formatHPa
 import org.hubik.openfugu.ui.AppColors
 import org.hubik.openfugu.ui.StatRow
 
