@@ -53,6 +53,12 @@ import org.hubik.openfugu.ble.EFuguViewModel
 import org.hubik.openfugu.ble.MockDeviceConnection
 import org.hubik.openfugu.ble.formatHPa
 
+// Handle geometry, shared by the handle itself and the gap in the panel's
+// border where the handle attaches (the handle is vertically centered).
+private val HandleIconSize = 20.dp
+private val HandleVerticalPadding = 16.dp
+private val HandleHeight = HandleIconSize + HandleVerticalPadding * 2
+
 /**
  * Floating controls for simulated devices, drawn over every screen while any
  * mock is connected: one vertical pressure slider per simulated device
@@ -95,7 +101,9 @@ fun MockDeviceOverlay(viewModel: EFuguViewModel) {
                     if (expanded) Icons.Filled.ChevronRight else Icons.Filled.ChevronLeft,
                     contentDescription = if (expanded) "Hide simulated device controls"
                         else "Show simulated device controls",
-                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 2.dp).size(20.dp)
+                    modifier = Modifier
+                        .padding(vertical = HandleVerticalPadding, horizontal = 2.dp)
+                        .size(HandleIconSize)
                 )
             }
             if (expanded) {
@@ -107,10 +115,11 @@ fun MockDeviceOverlay(viewModel: EFuguViewModel) {
                     shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
                     // fill = false: take at most the width left next to the
                     // handle, never push past the screen edge — on screens too
-                    // narrow for every slider the row scrolls instead.
+                    // narrow for every slider the row scrolls instead. The
+                    // border gap makes the handle a seamless part of the panel.
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .borderExceptEnd(borderColor, 1.dp, 12.dp)
+                        .borderExceptEnd(borderColor, 1.dp, 12.dp, startEdgeGapHeight = HandleHeight)
                 ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
@@ -135,10 +144,12 @@ fun MockDeviceOverlay(viewModel: EFuguViewModel) {
                             selected = autoZero,
                             onClick = {
                                 autoZero = !autoZero
-                                // Wave makes no sense with auto zero — the whole
-                                // point is hands-free; switch everything to manual.
+                                // Turning auto zero on zeroes everything right
+                                // away and drops wave — a hands-free pattern
+                                // contradicts spring-back-to-zero.
                                 if (autoZero) mocks.forEach {
                                     it.pattern.value = MockDeviceConnection.Pattern.Manual
+                                    it.controlHPa.value = 0.0
                                 }
                             },
                             label = { Text("Auto zero", fontSize = 11.sp) }
@@ -257,17 +268,29 @@ private fun MockPressureSlider(
 /**
  * Stroke along the top edge, the rounded start corners, and the bottom edge —
  * the end (right) edge stays open, because it touches either the control panel
- * or the screen edge and a line there would double up.
+ * or the screen edge and a line there would double up. A non-zero
+ * [startEdgeGapHeight] leaves a vertically centered opening in the start
+ * (left) edge, where the collapse handle attaches seamlessly.
  */
-private fun Modifier.borderExceptEnd(color: Color, strokeWidth: Dp, cornerRadius: Dp): Modifier =
+private fun Modifier.borderExceptEnd(
+    color: Color,
+    strokeWidth: Dp,
+    cornerRadius: Dp,
+    startEdgeGapHeight: Dp = 0.dp
+): Modifier =
     drawWithContent {
         drawContent()
         val half = strokeWidth.toPx() / 2f
         val r = cornerRadius.toPx()
+        val gap = startEdgeGapHeight.toPx()
         val path = Path().apply {
             moveTo(size.width, half)
             lineTo(r + half, half)
             arcTo(Rect(half, half, half + 2 * r, half + 2 * r), 270f, -90f, false)
+            if (gap > 0f) {
+                lineTo(half, (size.height - gap) / 2f)
+                moveTo(half, (size.height + gap) / 2f)
+            }
             lineTo(half, size.height - r - half)
             arcTo(
                 Rect(half, size.height - half - 2 * r, half + 2 * r, size.height - half),
