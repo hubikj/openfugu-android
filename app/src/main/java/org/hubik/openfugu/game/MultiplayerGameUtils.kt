@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.ble.DeviceConnectionState
-import org.hubik.openfugu.ble.SavedDevice
 import org.hubik.openfugu.ble.UserProfile
 import org.hubik.openfugu.session.Session
 import org.hubik.openfugu.session.SessionType
@@ -28,7 +27,6 @@ import org.hubik.openfugu.session.SessionType
 data class MultiplayerPlayerInfo(
     val connection: PressureSource,
     val userProfile: UserProfile?,
-    val savedDevice: SavedDevice,
     val color: Color,
     val displayName: String,
     val userName: String?
@@ -107,7 +105,7 @@ fun saveMultiplayerSession(
         Session.PlayerResult(
             deviceName = ps.info.displayName,
             userName = ps.info.userName,
-            colorArgb = ps.info.savedDevice.colorArgb,
+            colorArgb = ps.info.color.toArgb().toLong() and 0xFFFFFFFFL,
             score = ps.score,
             rank = idx + 1,
             pressureTrace = chartData.filter { it.timestamp in gameStartMs..endMs },
