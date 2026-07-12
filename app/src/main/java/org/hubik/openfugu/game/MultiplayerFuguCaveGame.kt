@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import org.hubik.openfugu.util.nowMillis
 
 // =============================================================================
@@ -136,6 +137,7 @@ fun MultiplayerFuguCaveScreen(
                     }
                 }
         ) {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -181,17 +183,17 @@ fun MultiplayerFuguCaveScreen(
                     }
 
                     // Shared distance (top center)
-                    drawScoreText((scrollOffset / 20f).toInt(), w)
+                    drawScoreText(textMeasurer, (scrollOffset / 20f).toInt(), w)
 
                     // Scoreboard (top-right)
-                    drawMultiplayerScoreboard(playerStates, w, dpToPx)
+                    drawMultiplayerScoreboard(textMeasurer, playerStates, w, dpToPx)
                 }
 
                 // Overlays
                 when (gameState) {
                     is GameState.WaitingToStart -> {
-                        drawWaitingPlayersRow(players, w, h, fishRadiusPx, dpToPx)
-                        drawOverlayText(
+                        drawWaitingPlayersRow(textMeasurer, players, w, h, fishRadiusPx, dpToPx)
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             if (allReady) "Tap to start"
                             else "Waiting for all devices..."

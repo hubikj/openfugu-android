@@ -13,6 +13,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import kotlin.math.hypot
 import kotlin.math.sin
 import org.hubik.openfugu.util.nowMillis
@@ -174,6 +175,7 @@ fun MultiplayerFuguReefScreen(
                     }
                 }
         ) {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -253,14 +255,14 @@ fun MultiplayerFuguReefScreen(
                     }
 
                     // Scoreboard (top-right)
-                    drawMultiplayerScoreboard(playerStates, w, dpToPx)
+                    drawMultiplayerScoreboard(textMeasurer, playerStates, w, dpToPx)
                 }
 
                 // Overlays
                 when (gameState) {
                     is GameState.WaitingToStart -> {
-                        drawWaitingPlayersRow(players, w, h, fishRadiusPx, dpToPx)
-                        drawOverlayText(
+                        drawWaitingPlayersRow(textMeasurer, players, w, h, fishRadiusPx, dpToPx)
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             if (allReady) "Tap to start"
                             else "Waiting for all devices..."

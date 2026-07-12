@@ -6,7 +6,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.TextMeasurer
+import org.hubik.openfugu.ui.TextAnchor
+import org.hubik.openfugu.ui.drawCanvasText
 
 // =============================================================================
 // Shared game state
@@ -90,49 +92,23 @@ suspend fun runFrameLoop(isRunning: () -> Boolean, onFrame: (clampedDt: Float) -
 // Shared drawing helpers
 // =============================================================================
 
-fun DrawScope.drawScoreText(score: Int, canvasWidth: Float) {
-    drawContext.canvas.nativeCanvas.drawText(
-        "$score",
-        canvasWidth / 2f,
-        80f,
-        android.graphics.Paint().apply {
-            color = GameScoreColor.toArgb()
-            textSize = 64f
-            isAntiAlias = true
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            textAlign = android.graphics.Paint.Align.CENTER
-        }
+fun DrawScope.drawScoreText(measurer: TextMeasurer, score: Int, canvasWidth: Float) {
+    drawCanvasText(measurer, "$score", canvasWidth / 2f, 80f, 64f, GameScoreColor, bold = true)
+}
+
+fun DrawScope.drawPressureText(measurer: TextMeasurer, text: String, canvasHeight: Float, dpToPx: Float) {
+    drawCanvasText(
+        measurer, text, 16f * dpToPx, canvasHeight - 16f * dpToPx,
+        13f * dpToPx, GamePressureColor, anchor = TextAnchor.LEFT
     )
 }
 
-fun DrawScope.drawPressureText(text: String, canvasHeight: Float, dpToPx: Float) {
-    drawContext.canvas.nativeCanvas.drawText(
-        text,
-        16f * dpToPx,
-        canvasHeight - 16f * dpToPx,
-        android.graphics.Paint().apply {
-            color = GamePressureColor.toArgb()
-            textSize = 13f * dpToPx
-            isAntiAlias = true
-        }
-    )
-}
-
-fun DrawScope.drawOverlayText(w: Float, h: Float, text: String) {
+fun DrawScope.drawOverlayText(measurer: TextMeasurer, w: Float, h: Float, text: String) {
     val lines = text.split("\n")
-    val paint = android.graphics.Paint().apply {
-        color = android.graphics.Color.WHITE
-        textSize = 42f
-        isAntiAlias = true
-        textAlign = android.graphics.Paint.Align.CENTER
-        typeface = android.graphics.Typeface.DEFAULT_BOLD
-    }
     val lineHeight = 52f
     val startY = h / 2f + lines.size * lineHeight / 2f + 80f
     lines.forEachIndexed { i, line ->
-        drawContext.canvas.nativeCanvas.drawText(
-            line, w / 2f, startY + i * lineHeight, paint
-        )
+        drawCanvasText(measurer, line, w / 2f, startY + i * lineHeight, 42f, Color.White, bold = true)
     }
 }
 

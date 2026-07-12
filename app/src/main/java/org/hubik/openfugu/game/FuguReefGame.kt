@@ -15,9 +15,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.rememberTextMeasurer
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.util.formatHPa
 import kotlin.math.max
@@ -186,6 +186,7 @@ fun FuguReefScreen(
                     }
                 }
         ) {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -293,18 +294,18 @@ fun FuguReefScreen(
                     drawFugu(fishX, fishYClamped, fishRadiusPx)
 
                     // --- Score (top center) ---
-                    drawScoreText(score, w)
+                    drawScoreText(textMeasurer, score, w)
 
                     // --- Live pressure (bottom-left) ---
                     val pressureText = pressure?.let { "${formatHPa(it.relativeHPa)} hPa" } ?: "-- hPa"
-                    drawPressureText(pressureText, h, dpToPx)
+                    drawPressureText(textMeasurer, pressureText, h, dpToPx)
                 }
 
                 // --- Overlays ---
                 when (gameState) {
                     is GameState.WaitingToStart -> {
                         drawFugu(w / 2f, h / 2f, fishRadiusPx * 1.5f)
-                        drawOverlayText(
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             if (isCalibrated && pressure != null)
                                 "Tap to start\nControl depth with equalization"
@@ -315,7 +316,7 @@ fun FuguReefScreen(
                     is GameState.GameOver -> {
                         drawRect(GameOverlayBg)
                         val gameOverState = gameState as GameState.GameOver
-                        drawOverlayText(
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             "Game Over\n\nScore: ${gameOverState.score}\nTap to play again"
                         )

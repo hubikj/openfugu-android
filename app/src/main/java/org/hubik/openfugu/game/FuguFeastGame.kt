@@ -17,9 +17,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import org.hubik.openfugu.ui.drawCanvasText
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.rememberTextMeasurer
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.util.formatHPa
 import kotlin.math.max
@@ -293,6 +294,7 @@ fun FuguFeastScreen(
                     }
                 }
         ) {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -363,32 +365,22 @@ fun FuguFeastScreen(
                     drawFugu(fishX, fishYClamped, playerRadiusPx)
 
                     // --- Score (top center) ---
-                    drawScoreText(score, w)
+                    drawScoreText(textMeasurer, score, w)
 
                     // --- Size indicator (below score) ---
                     val sizeText = "Size: ${playerRadius.toInt()}"
-                    drawContext.canvas.nativeCanvas.drawText(
-                        sizeText,
-                        w / 2f,
-                        120f,
-                        android.graphics.Paint().apply {
-                            color = GamePressureColor.toArgb()
-                            textSize = 32f
-                            isAntiAlias = true
-                            textAlign = android.graphics.Paint.Align.CENTER
-                        }
-                    )
+                    drawCanvasText(textMeasurer, sizeText, w / 2f, 120f, 32f, GamePressureColor)
 
                     // --- Live pressure (bottom-left) ---
                     val pressureText = pressure?.let { "${formatHPa(it.relativeHPa)} hPa" } ?: "-- hPa"
-                    drawPressureText(pressureText, h, dpToPx)
+                    drawPressureText(textMeasurer, pressureText, h, dpToPx)
                 }
 
                 // --- Overlays ---
                 when (gameState) {
                     is GameState.WaitingToStart -> {
                         drawFugu(w / 2f, h / 2f, FEAST_PLAYER_START_RADIUS_DP * dpToPx * 1.5f)
-                        drawOverlayText(
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             if (isCalibrated && pressure != null)
                                 "Tap to start\nEat smaller fish, avoid bigger ones!"
@@ -399,7 +391,7 @@ fun FuguFeastScreen(
                     is GameState.GameOver -> {
                         drawRect(GameOverlayBg)
                         val gameOverState = gameState as GameState.GameOver
-                        drawOverlayText(
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             "Game Over\n\nFish eaten: ${gameOverState.score}\nTap to play again"
                         )

@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.rememberTextMeasurer
+import org.hubik.openfugu.ui.TextAnchor
+import org.hubik.openfugu.ui.drawCanvasText
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -122,6 +124,7 @@ fun PressureChart(
         val maxScrollSec = ((rightEdgeTs - earliestTs) / 1000f - windowSec).coerceAtLeast(0f)
 
         Box {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,12 +144,6 @@ fun PressureChart(
                 val w = size.width
                 val h = size.height
                 val labelTextSize = with(density) { 12.sp.toPx() }
-
-                val textPaint = android.graphics.Paint().apply {
-                    color = labelColor.toArgb()
-                    textSize = labelTextSize
-                    isAntiAlias = true
-                }
 
                 fun hPaToY(hPa: Float): Float = h * (1f - (hPa - minVal) / range)
                 fun tsToX(ts: Long): Float {
@@ -169,11 +166,10 @@ fun PressureChart(
                     val lineWidth = if (gridVal == 0f) 1.5f else 0.5f
                     drawLine(lineAlpha, Offset(0f, y), Offset(w, y), strokeWidth = lineWidth)
 
-                    drawContext.canvas.nativeCanvas.drawText(
-                        "${gridVal.toInt()}",
-                        -with(density) { 36.dp.toPx() },
-                        y + labelTextSize / 3f,
-                        textPaint
+                    drawCanvasText(
+                        textMeasurer, "${gridVal.toInt()}",
+                        -with(density) { 36.dp.toPx() }, y + labelTextSize / 3f,
+                        labelTextSize, labelColor, anchor = TextAnchor.LEFT
                     )
                     gridVal += gridStep
                 }
@@ -195,7 +191,7 @@ fun PressureChart(
                 while (tickSec <= viewRightSec) {
                     val x = w * ((tickSec - viewLeftSec) / windowSec)
                     val label = formatMinSec(tickSec.toInt())
-                    drawContext.canvas.nativeCanvas.drawText(label, x, xLabelY, textPaint)
+                    drawCanvasText(textMeasurer, label, x, xLabelY, labelTextSize, labelColor, anchor = TextAnchor.LEFT)
                     tickSec += labelStep
                 }
 

@@ -17,9 +17,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import org.hubik.openfugu.ui.drawCanvasText
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.rememberTextMeasurer
 import org.hubik.openfugu.ble.PressureSource
 import org.hubik.openfugu.util.formatHPa
 import kotlin.math.abs
@@ -581,6 +583,7 @@ fun FuguFlowScreen(
                 is GameState.Playing -> {
                     val pattern = activePattern
                     if (pattern != null) {
+                        val textMeasurer = rememberTextMeasurer()
                         Canvas(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -589,6 +592,7 @@ fun FuguFlowScreen(
                             // Compute visually-proportional time weight from actual canvas size
                             timeWeight = computeTimeWeight(size.width, size.height)
                             drawFlowGame(
+                                textMeasurer = textMeasurer,
                                 w = size.width,
                                 h = size.height,
                                 dpToPx = density.density,
@@ -708,6 +712,7 @@ private fun FlowStatRow(label: String, time: Float, total: Float, color: Color) 
 // =============================================================================
 
 private fun DrawScope.drawFlowGame(
+    textMeasurer: TextMeasurer,
     w: Float,
     h: Float,
     dpToPx: Float,
@@ -739,29 +744,8 @@ private fun DrawScope.drawFlowGame(
     // Grace period countdown
     if (elapsedSec < 0f) {
         val countdown = (-elapsedSec).toInt() + 1
-        drawContext.canvas.nativeCanvas.drawText(
-            "$countdown",
-            w / 2f,
-            h / 2f + 40f,
-            android.graphics.Paint().apply {
-                color = CountdownColor.toArgb()
-                textSize = 96f
-                isAntiAlias = true
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
-        )
-        drawContext.canvas.nativeCanvas.drawText(
-            "Get ready...",
-            w / 2f,
-            h / 2f + 100f,
-            android.graphics.Paint().apply {
-                color = CountdownColor.toArgb()
-                textSize = 32f
-                isAntiAlias = true
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
-        )
+        drawCanvasText(textMeasurer, "$countdown", w / 2f, h / 2f + 40f, 96f, CountdownColor, bold = true)
+        drawCanvasText(textMeasurer, "Get ready...", w / 2f, h / 2f + 100f, 32f, CountdownColor)
     }
 
     // Scoring zones (only after grace period)
@@ -877,40 +861,21 @@ private fun DrawScope.drawFlowGame(
 
     // Score + combo (after grace period)
     if (elapsedSec >= 0f) {
-        drawScoreText(score, w)
+        drawScoreText(textMeasurer, score, w)
 
         if (comboMultiplier > 1) {
-            drawContext.canvas.nativeCanvas.drawText(
-                "${comboMultiplier}x",
-                w / 2f,
-                120f,
-                android.graphics.Paint().apply {
-                    color = GoodColor.toArgb()
-                    textSize = 36f
-                    isAntiAlias = true
-                    typeface = android.graphics.Typeface.DEFAULT_BOLD
-                    textAlign = android.graphics.Paint.Align.CENTER
-                }
-            )
+            drawCanvasText(textMeasurer, "${comboMultiplier}x", w / 2f, 120f, 36f, GoodColor, bold = true)
         }
 
         if (currentZone.isNotEmpty()) {
-            drawContext.canvas.nativeCanvas.drawText(
-                currentZone,
-                cursorX,
-                playerPxY - 16f * dpToPx,
-                android.graphics.Paint().apply {
-                    color = zoneColor.toArgb()
-                    textSize = 14f * dpToPx
-                    isAntiAlias = true
-                    typeface = android.graphics.Typeface.DEFAULT_BOLD
-                    textAlign = android.graphics.Paint.Align.CENTER
-                }
+            drawCanvasText(
+                textMeasurer, currentZone, cursorX, playerPxY - 16f * dpToPx,
+                14f * dpToPx, zoneColor, bold = true
             )
         }
     }
 
-    drawPressureText(pressureText, h, dpToPx)
+    drawPressureText(textMeasurer, pressureText, h, dpToPx)
 }
 
 private fun DrawScope.drawPatternPreview(pattern: FlowPattern, color: Color) {

@@ -10,7 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.TextMeasurer
+import org.hubik.openfugu.ui.TextAnchor
+import org.hubik.openfugu.ui.drawCanvasText
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -134,6 +136,7 @@ fun saveMultiplayerSession(
  * the overlay text below stays readable. Names are ellipsized to their slot.
  */
 fun DrawScope.drawWaitingPlayersRow(
+    measurer: TextMeasurer,
     players: List<MultiplayerPlayerInfo>,
     w: Float,
     h: Float,
@@ -149,30 +152,17 @@ fun DrawScope.drawWaitingPlayersRow(
     val rowPitch = drawnRadius * 2f + 24f * dpToPx
     val firstRowCy = (h * 0.25f - (rows.size - 1) * rowPitch / 2f)
         .coerceAtLeast(drawnRadius + 8f * dpToPx)
-    val namePaint = android.text.TextPaint().apply {
-        textSize = 14f * dpToPx
-        isAntiAlias = true
-        typeface = android.graphics.Typeface.DEFAULT_BOLD
-        textAlign = android.graphics.Paint.Align.CENTER
-    }
     rows.forEachIndexed { rowIdx, rowPlayers ->
         val spacing = w / (rowPlayers.size + 1)
         val cy = firstRowCy + rowIdx * rowPitch
         rowPlayers.forEachIndexed { idx, info ->
             val cx = spacing * (idx + 1)
             drawFugu(cx, cy, drawnRadius, bodyColor = info.color)
-            namePaint.color = info.color.toArgb()
-            val name = android.text.TextUtils.ellipsize(
-                info.userName ?: info.displayName,
-                namePaint,
-                spacing - 8f * dpToPx,
-                android.text.TextUtils.TruncateAt.END
-            ).toString()
-            drawContext.canvas.nativeCanvas.drawText(
-                name,
-                cx,
-                cy + fishRadiusPx * 2.5f,
-                namePaint
+            drawCanvasText(
+                measurer, info.userName ?: info.displayName,
+                cx, cy + fishRadiusPx * 2.5f,
+                14f * dpToPx, info.color, bold = true,
+                maxWidthPx = spacing - 8f * dpToPx
             )
         }
     }
@@ -180,23 +170,20 @@ fun DrawScope.drawWaitingPlayersRow(
 
 /** In-game scoreboard (top-right), ranked by score; dead players faded. */
 fun DrawScope.drawMultiplayerScoreboard(
+    measurer: TextMeasurer,
     playerStates: List<MultiplayerPlayerState>,
     w: Float,
     dpToPx: Float
 ) {
-    val textPaint = android.graphics.Paint().apply {
-        textSize = 14f * dpToPx
-        isAntiAlias = true
-        typeface = android.graphics.Typeface.DEFAULT_BOLD
-        textAlign = android.graphics.Paint.Align.RIGHT
-    }
     val lineHeight = 20f * dpToPx
     playerStates.sortedByDescending { it.score }.forEachIndexed { idx, ps ->
         val y = 28f * dpToPx + idx * lineHeight
         val label = "${ps.info.userName ?: ps.info.displayName}: ${ps.score}"
-        textPaint.color = if (ps.alive) ps.info.color.toArgb()
-            else ps.info.color.copy(alpha = 0.4f).toArgb()
-        drawContext.canvas.nativeCanvas.drawText(label, w - 12f * dpToPx, y, textPaint)
+        val color = if (ps.alive) ps.info.color else ps.info.color.copy(alpha = 0.4f)
+        drawCanvasText(
+            measurer, label, w - 12f * dpToPx, y,
+            14f * dpToPx, color, anchor = TextAnchor.RIGHT, bold = true
+        )
     }
 }
 

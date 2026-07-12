@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import kotlin.math.hypot
 import kotlin.math.sin
 import org.hubik.openfugu.util.nowMillis
@@ -257,6 +258,7 @@ fun MultiplayerFuguFeastScreen(
                     }
                 }
         ) {
+            val textMeasurer = rememberTextMeasurer()
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -326,17 +328,17 @@ fun MultiplayerFuguFeastScreen(
                     }
 
                     // Scoreboard (top-right)
-                    drawMultiplayerScoreboard(playerStates, w, dpToPx)
+                    drawMultiplayerScoreboard(textMeasurer, playerStates, w, dpToPx)
                 }
 
                 // Overlays
                 when (gameState) {
                     is GameState.WaitingToStart -> {
-                        drawWaitingPlayersRow(
+                        drawWaitingPlayersRow(textMeasurer, 
                             players, w, h,
                             FEAST_PLAYER_START_RADIUS_DP * dpToPx, dpToPx
                         )
-                        drawOverlayText(
+                        drawOverlayText(textMeasurer, 
                             w, h,
                             if (allReady)
                                 "Tap to start\nEat green fish, avoid red fish and rocks!"
