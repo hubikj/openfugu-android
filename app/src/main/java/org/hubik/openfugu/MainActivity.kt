@@ -310,17 +310,26 @@ fun EFuguApp(
         val onGameBack = { activeGame = null; activeGameDeviceAddresses = emptyList() }
         val onSaveSession = { session: org.hubik.openfugu.session.Session -> viewModel.saveSession(session) }
         BackHandler { onGameBack() }
+        // Auto-assigned colors must not collide with colors already assigned
+        // to other joined devices, nor with each other.
+        val takenColors = activeGameDeviceAddresses
+            .mapNotNull { addr -> savedDevices.find { it.address == addr }?.colorArgb }
+            .toMutableSet()
         val playerInfos = activeGameDeviceAddresses.mapNotNull { addr ->
             val conn = connections[addr] ?: return@mapNotNull null
             val saved = savedDevices.find { it.address == addr } ?: return@mapNotNull null
             val profile = viewModel.userForDevice(addr)
-            val color = saved.colorArgb?.let { Color(it.toInt()) }
-                ?: Color(org.hubik.openfugu.ble.DeviceColors.presets[activeGameDeviceAddresses.indexOf(addr) % org.hubik.openfugu.ble.DeviceColors.presets.size].toInt())
+            val colorArgb = saved.colorArgb ?: run {
+                val free = DeviceColors.presets.firstOrNull { it !in takenColors }
+                    ?: DeviceColors.presets[activeGameDeviceAddresses.indexOf(addr) % DeviceColors.presets.size]
+                takenColors.add(free)
+                free
+            }
             MultiplayerPlayerInfo(
                 connection = conn,
                 userProfile = profile,
                 savedDevice = saved,
-                color = color,
+                color = Color(colorArgb.toInt()),
                 displayName = saved.displayName,
                 userName = profile?.name
             )

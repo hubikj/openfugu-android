@@ -130,8 +130,9 @@ fun saveMultiplayerSession(
 // =============================================================================
 
 /**
- * Waiting-to-start screen: all fugus in a row with names, in the upper
- * quarter so the overlay text below stays readable.
+ * Waiting-to-start screen: all fugus with names, wrapped into evenly filled
+ * rows so large lobbies don't overlap, centered around the upper quarter so
+ * the overlay text below stays readable. Names are ellipsized to their slot.
  */
 fun DrawScope.drawWaitingPlayersRow(
     players: List<MultiplayerPlayerInfo>,
@@ -140,22 +141,41 @@ fun DrawScope.drawWaitingPlayersRow(
     fishRadiusPx: Float,
     dpToPx: Float
 ) {
-    val spacing = w / (players.size + 1)
-    players.forEachIndexed { idx, info ->
-        val cx = spacing * (idx + 1)
-        drawFugu(cx, h * 0.25f, fishRadiusPx * 1.5f, bodyColor = info.color)
-        drawContext.canvas.nativeCanvas.drawText(
-            info.userName ?: info.displayName,
-            cx,
-            h * 0.25f + fishRadiusPx * 2.5f,
-            android.graphics.Paint().apply {
-                color = info.color.toArgb()
-                textSize = 14f * dpToPx
-                isAntiAlias = true
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
-        )
+    val drawnRadius = fishRadiusPx * 1.5f
+    val minSlot = 96f * dpToPx
+    val maxPerRow = (w / minSlot).toInt().coerceAtLeast(1)
+    val rowCount = (players.size + maxPerRow - 1) / maxPerRow
+    val perRow = (players.size + rowCount - 1) / rowCount
+    val rows = players.chunked(perRow)
+    val rowPitch = drawnRadius * 2f + 24f * dpToPx
+    val firstRowCy = (h * 0.25f - (rows.size - 1) * rowPitch / 2f)
+        .coerceAtLeast(drawnRadius + 8f * dpToPx)
+    val namePaint = android.text.TextPaint().apply {
+        textSize = 14f * dpToPx
+        isAntiAlias = true
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+    rows.forEachIndexed { rowIdx, rowPlayers ->
+        val spacing = w / (rowPlayers.size + 1)
+        val cy = firstRowCy + rowIdx * rowPitch
+        rowPlayers.forEachIndexed { idx, info ->
+            val cx = spacing * (idx + 1)
+            drawFugu(cx, cy, drawnRadius, bodyColor = info.color)
+            namePaint.color = info.color.toArgb()
+            val name = android.text.TextUtils.ellipsize(
+                info.userName ?: info.displayName,
+                namePaint,
+                spacing - 8f * dpToPx,
+                android.text.TextUtils.TruncateAt.END
+            ).toString()
+            drawContext.canvas.nativeCanvas.drawText(
+                name,
+                cx,
+                cy + fishRadiusPx * 2.5f,
+                namePaint
+            )
+        }
     }
 }
 
