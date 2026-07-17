@@ -340,5 +340,6 @@ If desktop support is ever wanted, it falls out of the Kotlin Multiplatform rest
 - [ ] Figure out what the `dcdf` BLE characteristic does (exercise start/stop? device config? LED control?) — needs another HCI snoop while using the official app's exercise modes
 
 ## Low Priority
+- [ ] Enable R8 minification for release builds — Play warns about the missing deobfuscation file (minify is off); R8 would cut app size substantially. Needs keep-rules for reflection users (kotlinx.serialization, possibly Kable), a `mapping.txt` upload to Play per release, and a full device retest. Pair with the next Kotlin/AGP upgrade session.
 - [ ] Simulated dive mode — dry-run dive training: simulates the length of a breath hold and the frequency of equalizations. The user declares the depth at their first equalization; the app then predicts the following equalization points (same relative pressure-change intervals) down to the target depth and prompts the user to equalize at each one. The official app already has this; our focus is on games and instructor features. (Not to be confused with the shipped simulated device — this uses a real device.)
 - [ ] Landscape orientation support
